@@ -5,8 +5,11 @@
       ref="canvas"
       :width="width"
       :height="height"
+      :style="style"
     ></canvas>
     <button @click="clear">Stop</button>
+    <button @click="restart">Restart</button>
+    <button @click="cycleSize">Cycle Size</button>
   </div>
 </template>
 
@@ -21,39 +24,75 @@ export default {
       ctx: null,
       iteration: null,
       interval: null,
+      sizeCycle: 0,
+      size: [
+        {
+          width: 640,
+          height: 480,
+        },
+        {
+          width: 800,
+          height: 600,
+        },
+        {
+          width: 1024,
+          height: 768,
+        },
+        {
+          width: 1280,
+          height: 1024,
+        },
+      ],
     };
   },
   mounted: function () {
     this.iteration = 0;
     this.canvas = this.$refs.canvas;
     this.ctx = this.canvas.getContext("2d");
-    this.setup();
-    this.interval = setInterval(() => {
-      if (this.iteration == this.height) {
-        clearInterval(this.interval);
-        return;
-      }
-      requestAnimationFrame(() => {
-        this.evaluate();
-      });
-      this.iteration++;
-    }, 1000 / 24);
+    this.cycleSize();
   },
   methods: {
     setup() {
-      this.ctx.fillStyle = "black";
-      this.ctx.fillRect(0, 0, this.width, this.height);
-      this.ctx.fillStyle = "white";
-      this.ctx.fillRect(Math.floor(this.width / 2), 0, 1, 1);
+      this.$nextTick(() => {
+        this.ctx.fillStyle = "black";
+        this.ctx.fillRect(0, 0, this.width, this.height);
+        this.ctx.fillStyle = "white";
+        this.ctx.fillRect(Math.floor(this.width / 2), 0, 1, 1);
+      });
     },
     clear() {
       clearInterval(this.interval);
     },
-    getCanvasData() {
+    restart() {
+      this.clear();
+      this.setup();
+      this.iteration = 0;
+      this.interval = setInterval(() => {
+        if (this.iteration == this.height) {
+          this.clear();
+          return;
+        }
+        requestAnimationFrame(() => {
+          this.evaluate();
+        });
+        this.iteration++;
+      }, 1000 / 24);
+    },
+    cycleSize() {
+      this.clear();
+      if (this.sizeCycle == this.size.length) {
+        this.sizeCycle = 0;
+      }
+      this.width = this.size[this.sizeCycle].width;
+      this.height = this.size[this.sizeCycle].height;
+      this.restart();
+      this.sizeCycle++;
+    },
+    getCanvasLine() {
       return this.ctx.getImageData(0, this.iteration, this.width, -1).data;
     },
     evaluate() {
-      const fromData = this.getCanvasData();
+      const fromData = this.getCanvasLine();
       const toData = this.ctx.createImageData(this.width, 1);
       for (let i = 0; i < this.width * 4; i += 4) {
         const central = fromData[i] == 255;
@@ -75,14 +114,20 @@ export default {
       this.ctx.putImageData(toData, 0, this.iteration);
     },
   },
+  computed: {
+    style() {
+      return {
+        width: this.width + "px",
+        height: this.height + "px",
+      };
+    },
+  },
 };
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
 .canvas {
-  width: 1620px;
-  height: 1080px;
   display: block;
   margin: 0 auto;
   border: 1px solid black;
