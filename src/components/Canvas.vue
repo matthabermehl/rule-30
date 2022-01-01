@@ -60,7 +60,7 @@ export default {
         const left = fromData[i - 4] == 255;
         const right = fromData[i + 4] == 255;
         const centralOrRight = central || right;
-        if ((left || centralOrRight) && !(left && centralOrRight)) {
+        if (left ^ centralOrRight) {
           toData.data[i] = 255;
           toData.data[i + 1] = 255;
           toData.data[i + 2] = 255;
